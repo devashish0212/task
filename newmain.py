@@ -40,6 +40,7 @@ def wait_for_table_refresh(driver, wait):
 def get_current_page_data(driver, table, wait):
     """Extract data from the current page"""
     headers = [header.text.strip() for header in table.find_elements(By.TAG_NAME, 'th')]
+    print(len(headers))
     exclude_column = "Current Inspection Report"
     exclude_index = headers.index(exclude_column) if exclude_column in headers else None
 
