@@ -14,21 +14,5 @@
                 "inspectionDescription": null
             }
         ]
-    },
-    {
-        "ownerName": null,
-        "tradeName": "ADV FOREST",
-        "establishmentTypes": [],
-        "mapAddress": "420 S ANDOVER RD STE 101 Andover, KS 67002\n316-990-6498",
-        "inspections": [
-            {
-                "inspectionGrade": null,
-                "inspectionDate": "02/06/2025",
-                "inspectionType": "Routine",
-                "violationDescription": null,
-                "violationCode": null,
-                "inspectionDescription": null
-            }
-        ]
     }
 ]

@@ -7,20 +7,12 @@ import time
 import json
 import os
 
-def save_data_to_json(new_entry):
-    """Append data to JSON file after processing each row."""
-    filename = 'inspection_data.json'
-    
-    if os.path.exists(filename):
-        with open(filename, 'r', encoding='utf-8') as f:
-            try:
-                existing_data = json.load(f)
-                if not isinstance(existing_data, list):
-                    existing_data = []
-            except json.JSONDecodeError:
-                existing_data = []
-    else:
+def save_data_to_json(new_entry, filename='inspection_data.json'):
+    """Overwrite JSON file with new data each time program runs."""
+    if not os.path.exists(filename):
         existing_data = []
+    else:
+        existing_data = []  # Always start fresh
     
     existing_data.append(new_entry)
     
@@ -47,12 +39,11 @@ def get_current_page_data(driver, table, wait):
     rows = WebDriverWait(table, 10).until(
         EC.presence_of_all_elements_located((By.XPATH, '//*[@id="MainContent_gvInspections"]/tbody/tr'))
     )
-    
     print(f"Total rows found: {len(rows)}")
 
     for i, row in enumerate(rows):
         print(f"Processing row {i+1}...")
-        columns = row.find_elements(By.XPATH, './td[not(ancestor::thead)]')
+        columns = row.find_elements(By.XPATH, './td')
         print(f"Total columns found in row {i+1}: {len(columns)}")
         if len(columns) < 5:
             print("Skipping row with insufficient columns")
@@ -89,13 +80,50 @@ def click_inspection_link(driver, column, row_data, wait):
         if link_text:
             print(f"Clicking inspection link: {link_text}")
             driver.execute_script("arguments[0].click();", inspection_link)
-            time.sleep(2)
+            time.sleep(3)  # Added extra wait time for popup to load
+            
+            violations = []
+            index = 0
+            while True:
+                try:
+                    violation_desc_xpath = f'//*[@id="MainContent_wucPublicInspectionViolations_rptViolations_pnlCodeExplanation_{index}"]/div/div/text()'
+                    violation_code_xpath = f'//*[@id="MainContent_wucPublicInspectionViolations_rptViolations_lblRegulatorCodeType_{index}"]'
+                    inspection_desc_xpath = f'//*[@id="MainContent_wucPublicInspectionViolations_rptViolations_pnlComments_{index}"]'
+                    
+                    violation_desc_element = driver.find_element(By.XPATH, violation_desc_xpath)
+                    violation_desc = violation_desc_element.get_attribute('textContent').strip() if violation_desc_element else None
+                    
+                    violation_code_element = driver.find_element(By.XPATH, violation_code_xpath)
+                    violation_code = violation_code_element.text.strip() if violation_code_element else None
+                    
+                    inspection_desc_element = driver.find_element(By.XPATH, inspection_desc_xpath)
+                    inspection_desc = inspection_desc_element.text.strip() if inspection_desc_element else None
+                    
+                    violations.append({
+                        "inspectionGrade": None,
+                        "inspectionDate": row_data["inspections"][0]["inspectionDate"],
+                        "violationDescription": violation_desc,
+                        "violationCode": violation_code,
+                        "inspectionDescription": inspection_desc
+                    })
+                    
+                    index += 1
+                except NoSuchElementException:
+                    break  # No more violations found
+            
+            if violations:
+                row_data["inspections"] = violations
+            
         else:
             print("No violations reported for this row.")
     except NoSuchElementException:
         print("No inspection link found in this row.")
 
 def search_and_extract_data():
+    filename = 'inspection_data.json'
+    if os.path.exists(filename):
+        os.remove(filename)  # Delete previous JSON file before starting new extraction
+
     options = webdriver.ChromeOptions()
     options.add_argument('--no-sandbox')
     options.add_argument('--disable-dev-shm-usage')
@@ -122,7 +150,7 @@ def search_and_extract_data():
             
             try:
                 next_page = current_page + 1
-                next_page_xpath = f"//a[contains(@href, 'Page${next_page}')]"
+                next_page_xpath = f"//a[contains(@href, 'Page${next_page}')']"
                 next_link = wait.until(EC.presence_of_element_located((By.XPATH, next_page_xpath)))
                 
                 print(f"Navigating to page {next_page}...")
@@ -147,3 +175,6 @@ def search_and_extract_data():
 
 if __name__ == "__main__":
     search_and_extract_data()
+
+#xpath check forvoilation description
+#
